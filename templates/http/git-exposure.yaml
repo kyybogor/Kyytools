@@ -1,0 +1,19 @@
+id: git-exposure
+name: Git Repository Metadata Exposure
+description: Mendeteksi paparan direktori .git/config yang tidak terproteksi dan dapat diunduh publik.
+severity: HIGH
+category: Information Disclosure
+target_type: URL
+check_type: http_path
+evidence: "Path /.git/config mengembalikan HTTP 200 dan berisi '[core]'"
+remediation: Blokir akses ke folder tersembunyi (dotfiles) seperti .git pada konfigurasi web server.
+references:
+  - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/05-Enumerate_Infrastructure_and_Application_Admin_Interfaces
+tags:
+  - git
+  - exposure
+  - config
+metadata:
+  path: "/.git/config"
+  expected_status: "200"
+  match_string: "[core]"

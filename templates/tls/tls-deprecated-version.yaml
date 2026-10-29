@@ -1,0 +1,17 @@
+id: tls-deprecated-version
+name: Deprecated TLS Protocol Version Negotiated (TLS 1.0 / 1.1)
+description: Layanan menegosiasikan protokol enkripsi TLS versi lawas yang sudah deprecated dan rentan terhadap berbagai serangan kriptografi.
+severity: MEDIUM
+category: TLS/SSL
+target_type: DOMAIN
+check_type: tls_handshake
+evidence: "Negosiasi TLS berhasil pada versi di bawah TLSv1.2 (TLS 1.0 / 1.1)"
+remediation: Nonaktifkan protokol SSLv3, TLS 1.0, dan TLS 1.1 pada web server/load balancer. Gunakan minimal TLS 1.2 dan TLS 1.3.
+references:
+  - https://datatracker.ietf.org/doc/rfc8996/
+tags:
+  - tls
+  - encryption
+  - ssl
+metadata:
+  min_version: "TLS1.2"

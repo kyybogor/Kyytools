@@ -1,0 +1,19 @@
+id: env-disclosure
+name: Environment Configuration File Disclosure (.env)
+description: Mendeteksi file .env yang dapat diakses secara publik dan membocorkan credential sensitif database atau API key.
+severity: CRITICAL
+category: Sensitive Data Exposure
+target_type: URL
+check_type: http_path
+evidence: "Path /.env mengembalikan status 200 dengan parameter environment"
+remediation: Blokir akses langsung ke file .env dan simpan environment di luar document root.
+references:
+  - https://cwe.mitre.org/data/definitions/200.html
+tags:
+  - env
+  - secrets
+  - critical
+metadata:
+  path: "/.env"
+  expected_status: "200"
+  match_string: "APP_KEY="

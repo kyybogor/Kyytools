@@ -1,0 +1,109 @@
+app:
+  name: "KyyTools Security Scanner"
+  version: "1.0.0"
+  environment: "production"
+  log_level: "info"
+  no_color: false
+
+scope:
+  allow_private_ips: false
+  allow_loopback: false
+  allowed_domains: []
+  allowed_cidrs: []
+  blocked_domains:
+    - "localhost"
+  blocked_cidrs:
+    - "127.0.0.0/8"
+    - "169.254.0.0/16"
+    - "::1/128"
+
+scanner:
+  default_profile: "quick"
+  global_timeout: 300
+  module_timeout: 30
+  max_concurrency: 50
+  rate_limit_rps: 30
+  follow_redirect: false
+  max_redirects: 3
+  user_agent: "KyyTools-Security-Scanner/1.0.0 (+https://github.com/kyytools/kyytools)"
+
+database:
+  driver: "sqlite"
+  path: "kyytools.db"
+
+reports:
+  output_dir: "reports"
+  auto_export: true
+  default_type: "html"
+
+profiles:
+  - name: "quick"
+    description: "Pemeriksaan cepat: validasi target, DNS basic, status web, dan port vital"
+    modules:
+      - "target_info"
+      - "dns_resolver"
+      - "web_headers"
+      - "port_scan_top"
+    timeout_seconds: 60
+    concurrency: 10
+    rate_limit: 20
+    port_range: "80,443,8080,8443"
+    is_default: true
+
+  - name: "standard"
+    description: "Pemeriksaan seimbang: DNS komprehensif, HTTP/TLS, security headers, dan 20 port umum"
+    modules:
+      - "target_info"
+      - "dns_resolver"
+      - "tls_check"
+      - "web_headers"
+      - "http_methods"
+      - "cookie_flags"
+      - "port_scan_standard"
+    timeout_seconds: 180
+    concurrency: 25
+    rate_limit: 30
+    port_range: "21,22,25,53,80,110,143,443,465,587,993,995,3306,3389,5432,6379,8000,8080,8443,8888"
+    is_default: false
+
+  - name: "web"
+    description: "Fokus keamanan web: HTTP status, TLS handshake, SSL certificate, headers, cookies, methods, template checks"
+    modules:
+      - "target_info"
+      - "dns_resolver"
+      - "tls_check"
+      - "web_headers"
+      - "http_methods"
+      - "cookie_flags"
+      - "vuln_templates"
+    timeout_seconds: 240
+    concurrency: 15
+    rate_limit: 25
+    port_range: "80,443,8000,8080,8443"
+    is_default: false
+
+  - name: "network"
+    description: "Pemeriksaan jaringan: resolusi IP, port scan diperluas (100 port), service banner grabbing"
+    modules:
+      - "target_info"
+      - "dns_resolver"
+      - "port_scan_extended"
+      - "service_detection"
+    timeout_seconds: 300
+    concurrency: 50
+    rate_limit: 50
+    port_range: "1-1024"
+    is_default: false
+
+  - name: "custom"
+    description: "Profil kustom yang dapat disesuaikan pengguna"
+    modules:
+      - "target_info"
+      - "dns_resolver"
+      - "tls_check"
+      - "web_headers"
+    timeout_seconds: 120
+    concurrency: 20
+    rate_limit: 25
+    port_range: "80,443"
+    is_default: false

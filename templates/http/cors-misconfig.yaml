@@ -1,0 +1,18 @@
+id: cors-misconfig
+name: Permissive Cross-Origin Resource Sharing (CORS) Wildcard
+description: Header Access-Control-Allow-Origin disetel ke wildcard (*) bersama kredensial atau merefleksikan Origin sembarang.
+severity: MEDIUM
+category: HTTP Configuration
+target_type: URL
+check_type: http_header
+evidence: "Header Access-Control-Allow-Origin: *"
+remediation: Batasi origin yang diizinkan hanya ke domain terpercaya dan hindari penggunaan wildcard bersama kredensial.
+references:
+  - https://portswigger.net/web-security/cors
+tags:
+  - cors
+  - api
+  - headers
+metadata:
+  header_name: "Access-Control-Allow-Origin"
+  match_value: "*"

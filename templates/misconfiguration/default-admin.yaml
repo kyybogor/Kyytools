@@ -1,0 +1,21 @@
+id: default-admin
+name: Exposed Administrative / Management Interface
+description: Panel login administratif atau dashboard pengelolaan terdeteksi terbuka ke publik tanpa pembatasan IP/VPN.
+severity: HIGH
+category: Misconfiguration
+target_type: URL
+check_type: http_path
+evidence: "Path /admin/login atau /phpmyadmin terdeteksi dapat diakses publik"
+remediation: Batasi akses ke interface administratif menggunakan IP whitelist, VPN internal, atau Multi-Factor Authentication (MFA).
+references:
+  - https://cwe.mitre.org/data/definitions/284.html
+tags:
+  - admin
+  - panel
+  - misconfiguration
+metadata:
+  paths:
+    - "/admin"
+    - "/admin/login"
+    - "/phpmyadmin"
+    - "/manager/html"

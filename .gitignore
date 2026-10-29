@@ -1,0 +1,27 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+kyytools
+kyytools.exe
+
+# Database
+kyytools.db
+kyytools.db-wal
+kyytools.db-shm
+*.db
+*.db-journal
+
+# Reports
+reports/*.html
+reports/*.json
+reports/*.csv
+!reports/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
