@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/safety"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/safety"
 )
 
 // Parser parses and validates scan targets.

@@ -3,7 +3,7 @@ package risk
 import (
 	"strings"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 )
 
 // Severity weights for aggregate risk scoring.

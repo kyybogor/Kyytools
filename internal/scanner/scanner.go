@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/risk"
-	"github.com/kyytools/kyytools/internal/safety"
-	"github.com/kyytools/kyytools/internal/storage"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/risk"
+	"github.com/kyybogor/Kyytools/internal/safety"
+	"github.com/kyybogor/Kyytools/internal/storage"
 )
 
 // ProgressCallback provides real-time status updates during a scan.

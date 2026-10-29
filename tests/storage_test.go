@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/storage"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/storage"
 )
 
 func TestStorage_CRUD(t *testing.T) {

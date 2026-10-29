@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -97,7 +97,7 @@ func DefaultConfig() *models.AppConfig {
 			RateLimitRPS:   30,
 			FollowRedirect: false, // Aman dari SSRF redirect
 			MaxRedirects:   3,
-			UserAgent:      "KyyTools-Security-Scanner/1.0.0 (+https://github.com/kyytools/kyytools)",
+			UserAgent:      "KyyTools-Security-Scanner/1.0.0 (+https://github.com/kyybogor/Kyytools)",
 		},
 		Database: models.DatabaseConfig{
 			Driver: "sqlite",

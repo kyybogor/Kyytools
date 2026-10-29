@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 	_ "modernc.org/sqlite"
 )
 

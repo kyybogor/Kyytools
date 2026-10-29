@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/reports"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/reports"
 )
 
 func TestReports_Generation(t *testing.T) {

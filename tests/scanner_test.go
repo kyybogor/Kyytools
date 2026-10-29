@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/safety"
-	"github.com/kyytools/kyytools/internal/scanner"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/safety"
+	"github.com/kyybogor/Kyytools/internal/scanner"
 )
 
 func TestWebHeadersModule_LocalServer(t *testing.T) {

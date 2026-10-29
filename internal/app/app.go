@@ -7,13 +7,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kyytools/kyytools/internal/cli"
-	"github.com/kyytools/kyytools/internal/config"
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/safety"
-	"github.com/kyytools/kyytools/internal/scanner"
-	"github.com/kyytools/kyytools/internal/storage"
-	"github.com/kyytools/kyytools/internal/target"
+	"github.com/kyybogor/Kyytools/internal/cli"
+	"github.com/kyybogor/Kyytools/internal/config"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/safety"
+	"github.com/kyybogor/Kyytools/internal/scanner"
+	"github.com/kyybogor/Kyytools/internal/storage"
+	"github.com/kyybogor/Kyytools/internal/target"
 )
 
 // App is the root coordinator of KyyTools Security Scanner.

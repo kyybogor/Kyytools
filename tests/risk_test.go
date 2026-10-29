@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/risk"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/risk"
 )
 
 func TestRiskScore_Calculations(t *testing.T) {

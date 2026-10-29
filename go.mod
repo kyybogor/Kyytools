@@ -1,4 +1,4 @@
-module github.com/kyytools/kyytools
+module github.com/kyybogor/Kyytools
 
 go 1.27.0
 

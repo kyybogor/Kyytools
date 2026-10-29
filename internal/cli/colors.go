@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 )
 
 var DisableColor = false

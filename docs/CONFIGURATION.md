@@ -37,7 +37,7 @@ scanner:
   rate_limit_rps: 30       # Batas permintaan per detik
   follow_redirect: false   # Anti-SSRF: nonaktifkan otomatis mengikuti redirect
   max_redirects: 3
-  user_agent: "KyyTools-Security-Scanner/1.0.0 (+https://github.com/kyytools/kyytools)"
+  user_agent: "KyyTools-Security-Scanner/1.0.0 (+https://github.com/kyybogor/Kyytools)"
 
 database:
   driver: "sqlite"

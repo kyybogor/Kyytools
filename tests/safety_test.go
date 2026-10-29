@@ -4,8 +4,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/safety"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/safety"
 )
 
 func TestScopeValidator_Rejections(t *testing.T) {

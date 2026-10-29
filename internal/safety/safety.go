@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 )
 
 var (

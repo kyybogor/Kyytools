@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kyytools/kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/models"
 )
 
 // ReportData provides structured input for report templates.

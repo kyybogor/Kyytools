@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kyytools/kyytools/internal/config"
-	"github.com/kyytools/kyytools/internal/models"
-	"github.com/kyytools/kyytools/internal/reports"
-	"github.com/kyytools/kyytools/internal/scanner"
-	"github.com/kyytools/kyytools/internal/storage"
-	"github.com/kyytools/kyytools/internal/target"
+	"github.com/kyybogor/Kyytools/internal/config"
+	"github.com/kyybogor/Kyytools/internal/models"
+	"github.com/kyybogor/Kyytools/internal/reports"
+	"github.com/kyybogor/Kyytools/internal/scanner"
+	"github.com/kyybogor/Kyytools/internal/storage"
+	"github.com/kyybogor/Kyytools/internal/target"
 )
 
 // AppServices bundles core application components for CLI actions.
