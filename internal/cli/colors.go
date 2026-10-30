@@ -3,7 +3,9 @@ package cli
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/kyybogor/Kyytools/internal/models"
 )
@@ -71,7 +73,27 @@ func PrintBanner() {
 	fmt.Println(Cyan(sub))
 }
 
-// RenderTable prints a simple bordered ASCII table.
+var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
+
+// stripANSI removes ANSI escape color sequences from a string.
+func stripANSI(s string) string {
+	return ansiRegex.ReplaceAllString(s, "")
+}
+
+// visibleWidth calculates the visible display width in characters, excluding ANSI escape codes.
+func visibleWidth(s string) int {
+	clean := stripANSI(s)
+	return utf8.RuneCountInString(clean)
+}
+
+func padSpaces(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return strings.Repeat(" ", n)
+}
+
+// RenderTable prints a simple, perfectly-aligned bordered ASCII table with ANSI color support.
 func RenderTable(headers []string, rows [][]string) {
 	if len(headers) == 0 {
 		return
@@ -79,13 +101,16 @@ func RenderTable(headers []string, rows [][]string) {
 
 	colWidths := make([]int, len(headers))
 	for i, h := range headers {
-		colWidths[i] = len(h)
+		colWidths[i] = visibleWidth(h)
 	}
 
 	for _, row := range rows {
 		for i, cell := range row {
-			if i < len(colWidths) && len(cell) > colWidths[i] {
-				colWidths[i] = len(cell)
+			if i < len(colWidths) {
+				w := visibleWidth(cell)
+				if w > colWidths[i] {
+					colWidths[i] = w
+				}
 			}
 		}
 	}
@@ -96,7 +121,8 @@ func RenderTable(headers []string, rows [][]string) {
 	// Print header
 	fmt.Print("│")
 	for i, h := range headers {
-		fmt.Printf(" %-*s │", colWidths[i], Bold(h))
+		pad := padSpaces(colWidths[i] - visibleWidth(h))
+		fmt.Printf(" %s%s │", Bold(h), pad)
 	}
 	fmt.Println()
 
@@ -111,7 +137,8 @@ func RenderTable(headers []string, rows [][]string) {
 			if i < len(row) {
 				cell = row[i]
 			}
-			fmt.Printf(" %-*s │", colWidths[i], cell)
+			pad := padSpaces(colWidths[i] - visibleWidth(cell))
+			fmt.Printf(" %s%s │", cell, pad)
 		}
 		fmt.Println()
 	}
