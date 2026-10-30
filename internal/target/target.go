@@ -154,7 +154,17 @@ func (p *Parser) Parse(ctx context.Context, input string) (*models.Target, error
 		} else if scheme == "http" {
 			port = 80
 		} else {
-			port = 80 // Default to standard web port for general targets
+			// Smart detection: cek apakah port 443 (HTTPS) merespon pada target host
+			dialer := net.Dialer{Timeout: 1500 * time.Millisecond}
+			conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(host, "443"))
+			if err == nil {
+				conn.Close()
+				port = 443
+				scheme = "https"
+			} else {
+				port = 80
+				scheme = "http"
+			}
 		}
 	}
 

@@ -367,11 +367,11 @@ func (m *WebHeadersModule) Description() string {
 func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profile *models.ScanProfile, val *safety.ScopeValidator) ([]models.Finding, error) {
 	var findings []models.Finding
 
-	client := val.CreateSafeHTTPClient(10*time.Second, false, 3)
+	client := val.CreateSafeHTTPClient(10*time.Second, true, 5)
 
 	reqURL := target.CanonicalURL
 	if !strings.HasPrefix(reqURL, "http://") && !strings.HasPrefix(reqURL, "https://") {
-		reqURL = "http://" + target.Host
+		reqURL = "https://" + target.Host
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
@@ -382,7 +382,14 @@ func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profi
 
 	resp, err := client.Do(req)
 	if err != nil {
-		if strings.HasPrefix(reqURL, "http://") {
+		if strings.HasPrefix(reqURL, "https://") {
+			reqURL = "http://" + target.Host
+			req2, err2 := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+			if err2 == nil {
+				req2.Header.Set("User-Agent", "KyyTools-Security-Scanner/1.0.0")
+				resp, err = client.Do(req2)
+			}
+		} else if strings.HasPrefix(reqURL, "http://") {
 			reqURL = "https://" + target.Host
 			req2, err2 := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
 			if err2 == nil {
@@ -396,14 +403,45 @@ func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profi
 	}
 	defer resp.Body.Close()
 
-	headers := resp.Header
+	// Kumpulkan seluruh header dan cookie dari mata rantai redirect (misal dari HTTP 301/302 ke HTTPS)
+	allHeaders := make(http.Header)
+	for k, vv := range resp.Header {
+		for _, v := range vv {
+			allHeaders.Add(k, v)
+		}
+	}
+	allCookies := resp.Cookies()
 
-	// 1. Server Banner Exposure
+	for prev := resp.Request.Response; prev != nil; prev = prev.Request.Response {
+		for k, vv := range prev.Header {
+			for _, v := range vv {
+				if allHeaders.Get(k) == "" {
+					allHeaders.Add(k, v)
+				}
+			}
+		}
+		allCookies = append(allCookies, prev.Cookies()...)
+	}
+	headers := allHeaders
+
+	// 1. Server Banner Exposure & PHP in Server header
 	if server := headers.Get("Server"); server != "" {
-		if strings.Contains(server, "/") {
+		if strings.Contains(strings.ToUpper(server), "PHP") {
 			findings = append(findings, models.Finding{
 				ModuleName:         m.Name(),
-				Title:              "Pengungkapan Versi Web Server (Server Banner)",
+				Title:              fmt.Sprintf("Pengungkapan Versi PHP pada Banner Server (%s)", server),
+				Description:        "Header HTTP 'Server' mengungkap versi modul PHP yang beroperasi pada web server, mempermudah penyerang menargetkan eksploitasi CVE spesifik.",
+				Severity:           models.SeverityCritical,
+				Confidence:         models.ConfidenceCertain,
+				Category:           "Information Disclosure",
+				Evidence:           fmt.Sprintf("Server: %s", server),
+				Remediation:        "Konfigurasikan web server agar tidak menyertakan versi modul PHP pada ServerTokens / server banner.",
+				VerificationStatus: "VERIFIED",
+			})
+		} else if strings.Contains(server, "/") {
+			findings = append(findings, models.Finding{
+				ModuleName:         m.Name(),
+				Title:              fmt.Sprintf("Pengungkapan Versi Web Server (%s)", server),
 				Description:        "Header HTTP 'Server' mengungkap versi software web server secara spesifik yang memudahkan pencarian exploit bertarget.",
 				Severity:           models.SeverityLow,
 				Confidence:         models.ConfidenceCertain,
@@ -415,17 +453,71 @@ func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profi
 		}
 	}
 
-	// 2. X-Powered-By
+	// 2. X-Powered-By & PHP Version Disclosure (CRITICAL)
 	if poweredBy := headers.Get("X-Powered-By"); poweredBy != "" {
+		if strings.Contains(strings.ToUpper(poweredBy), "PHP") {
+			findings = append(findings, models.Finding{
+				ModuleName:         m.Name(),
+				Title:              fmt.Sprintf("Pengungkapan Versi PHP ke Publik (%s)", poweredBy),
+				Description:        fmt.Sprintf("Web server secara terang-terangan membocorkan versi runtime PHP (%s) ke publik melalui header respons HTTP 'X-Powered-By'. Hal ini merupakan kelemahan kritis karena memudahkan penyerang memetakan kerentanan keamanan dan mencari exploit CVE yang cocok dengan versi PHP tersebut.", poweredBy),
+				Severity:           models.SeverityCritical,
+				Confidence:         models.ConfidenceCertain,
+				Category:           "Information Disclosure",
+				Evidence:           fmt.Sprintf("X-Powered-By: %s", poweredBy),
+				Remediation:        "Nonaktifkan direktif expose_php pada file php.ini (ubah menjadi: expose_php = Off), lalu restart service PHP-FPM / web server.",
+				VerificationStatus: "VERIFIED",
+			})
+		} else {
+			findings = append(findings, models.Finding{
+				ModuleName:         m.Name(),
+				Title:              fmt.Sprintf("Pengungkapan Framework Backend (%s)", poweredBy),
+				Description:        fmt.Sprintf("Header 'X-Powered-By' membocorkan teknologi backend dan runtime (%s) yang digunakan.", poweredBy),
+				Severity:           models.SeverityLow,
+				Confidence:         models.ConfidenceCertain,
+				Category:           "Information Disclosure",
+				Evidence:           fmt.Sprintf("X-Powered-By: %s", poweredBy),
+				Remediation:        "Nonaktifkan header X-Powered-By pada konfigurasi aplikasi atau runtime.",
+				VerificationStatus: "VERIFIED",
+			})
+		}
+	}
+
+	// 2b. X-PHP-Version (CRITICAL)
+	if phpVer := headers.Get("X-PHP-Version"); phpVer != "" {
 		findings = append(findings, models.Finding{
 			ModuleName:         m.Name(),
-			Title:              "Pengungkapan Framework Backend (X-Powered-By)",
-			Description:        "Header 'X-Powered-By' membocorkan teknologi backend dan runtime yang digunakan.",
+			Title:              fmt.Sprintf("Pengungkapan Versi PHP via X-PHP-Version (%s)", phpVer),
+			Description:        fmt.Sprintf("Header 'X-PHP-Version' secara eksplisit membocorkan nomor versi runtime PHP (%s) kepada publik.", phpVer),
+			Severity:           models.SeverityCritical,
+			Confidence:         models.ConfidenceCertain,
+			Category:           "Information Disclosure",
+			Evidence:           fmt.Sprintf("X-PHP-Version: %s", phpVer),
+			Remediation:        "Hapus header kustom X-PHP-Version pada konfigurasi aplikasi atau web server.",
+			VerificationStatus: "VERIFIED",
+		})
+	}
+
+	// 2b. Hosting Platform & Control Panel Headers (e.g. Hostinger, hpanel)
+	platformHdr := headers.Get("Platform")
+	panelHdr := headers.Get("Panel")
+	if platformHdr != "" || panelHdr != "" {
+		infoStr := ""
+		if platformHdr != "" && panelHdr != "" {
+			infoStr = fmt.Sprintf("Platform: %s, Panel: %s", platformHdr, panelHdr)
+		} else if platformHdr != "" {
+			infoStr = fmt.Sprintf("Platform: %s", platformHdr)
+		} else {
+			infoStr = fmt.Sprintf("Panel: %s", panelHdr)
+		}
+		findings = append(findings, models.Finding{
+			ModuleName:         m.Name(),
+			Title:              fmt.Sprintf("Pengungkapan Infrastruktur Hosting & Control Panel (%s)", infoStr),
+			Description:        "Web server memancarkan header respons HTTP non-standar yang membocorkan penyedia hosting dan jenis panel kontrol yang dipakai.",
 			Severity:           models.SeverityLow,
 			Confidence:         models.ConfidenceCertain,
 			Category:           "Information Disclosure",
-			Evidence:           fmt.Sprintf("X-Powered-By: %s", poweredBy),
-			Remediation:        "Nonaktifkan header X-Powered-By pada konfigurasi aplikasi atau runtime (misal: expose_php = Off pada php.ini).",
+			Evidence:           infoStr,
+			Remediation:        "Sembunyikan header platform dan panel pada konfigurasi reverse proxy atau CDN jika tidak diperlukan.",
 			VerificationStatus: "VERIFIED",
 		})
 	}
@@ -520,9 +612,34 @@ func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profi
 		})
 	}
 
-	// 9. Cookie Security Flags & SameSite
-	cookies := resp.Cookies()
-	for _, c := range cookies {
+	// 9. Cookie Security Flags & SameSite & PHPSESSID Detection
+	seenCookies := make(map[string]bool)
+	seenPHPSess := false
+	for _, c := range allCookies {
+		if strings.EqualFold(c.Name, "PHPSESSID") && !seenPHPSess {
+			seenPHPSess = true
+			valSnippet := c.Value
+			if len(valSnippet) > 8 {
+				valSnippet = valSnippet[:8] + "..."
+			}
+			findings = append(findings, models.Finding{
+				ModuleName:         m.Name(),
+				Title:              "Identifikasi Backend PHP Melalui Cookie Sesi (PHPSESSID)",
+				Description:        "Web server memancarkan cookie sesi bawaan PHP ('PHPSESSID'), mengonfirmasi secara pasti bahwa aplikasi dijalankan di atas engine PHP.",
+				Severity:           models.SeverityInfo,
+				Confidence:         models.ConfidenceCertain,
+				Category:           "Information Disclosure",
+				Evidence:           fmt.Sprintf("Set-Cookie: %s=%s", c.Name, valSnippet),
+				Remediation:        "Ubah nama cookie sesi default pada php.ini (misalnya session.name = APP_SESSION) untuk menyamarkan stack teknologi backend.",
+				VerificationStatus: "VERIFIED",
+			})
+		}
+
+		if seenCookies[c.Name] {
+			continue
+		}
+		seenCookies[c.Name] = true
+
 		if !c.HttpOnly {
 			findings = append(findings, models.Finding{
 				ModuleName:         m.Name(),
@@ -536,7 +653,7 @@ func (m *WebHeadersModule) Run(ctx context.Context, target *models.Target, profi
 				VerificationStatus: "VERIFIED",
 			})
 		}
-		if !c.Secure && strings.HasPrefix(reqURL, "https://") {
+		if !c.Secure && (strings.HasPrefix(reqURL, "https://") || strings.HasPrefix(resp.Request.URL.String(), "https://")) {
 			findings = append(findings, models.Finding{
 				ModuleName:         m.Name(),
 				Title:              fmt.Sprintf("Cookie '%s' Tanpa Flag Secure", c.Name),
@@ -670,7 +787,7 @@ func (m *CORSModule) Description() string {
 }
 func (m *CORSModule) Run(ctx context.Context, target *models.Target, profile *models.ScanProfile, val *safety.ScopeValidator) ([]models.Finding, error) {
 	var findings []models.Finding
-	client := val.CreateSafeHTTPClient(8*time.Second, false, 2)
+	client := val.CreateSafeHTTPClient(8*time.Second, true, 3)
 
 	testOrigin := "https://kyytools-security-audit.test"
 	req, err := http.NewRequestWithContext(ctx, "GET", target.CanonicalURL, nil)
@@ -731,7 +848,7 @@ func (m *SensitiveFilesModule) Description() string {
 }
 func (m *SensitiveFilesModule) Run(ctx context.Context, target *models.Target, profile *models.ScanProfile, val *safety.ScopeValidator) ([]models.Finding, error) {
 	var findings []models.Finding
-	client := val.CreateSafeHTTPClient(6*time.Second, false, 2)
+	client := val.CreateSafeHTTPClient(8*time.Second, true, 4)
 
 	baseURL := strings.TrimRight(target.CanonicalURL, "/")
 
@@ -792,11 +909,29 @@ func (m *SensitiveFilesModule) Run(ctx context.Context, target *models.Target, p
 		{
 			path:        "/phpinfo.php",
 			title:       "Paparan Halaman Diagnostik Sistem phpinfo()",
-			description: "File diagnostik phpinfo terbuka untuk publik, membocorkan versi PHP, path direktori server, variabel environment, dan modul terpasang.",
-			severity:    models.SeverityMedium,
+			description: "File diagnostik phpinfo terbuka untuk publik, membocorkan versi PHP, path direktori server, variabel environment, dan modul terpasang secara kritis.",
+			severity:    models.SeverityCritical,
 			category:    "Information Disclosure",
 			matchSign:   "Configuration File",
 			remediation: "Hapus file phpinfo.php segera dari server publik.",
+		},
+		{
+			path:        "/info.php",
+			title:       "Paparan Halaman Diagnostik Sistem info.php (phpinfo)",
+			description: "File diagnostik info.php terbuka untuk publik, membocorkan versi PHP dan konfigurasi php.ini secara kritis.",
+			severity:    models.SeverityCritical,
+			category:    "Information Disclosure",
+			matchSign:   "Configuration File",
+			remediation: "Hapus file info.php segera dari server publik.",
+		},
+		{
+			path:        "/?=PHPB8B5F2A0-3C92-11d3-A2A4-00C04FA38614",
+			title:       "Kebocoran Informasi PHP via Easter Egg Query",
+			description: "Server merespons PHP Easter Egg GUID yang mengonfirmasi bahwa direktif expose_php aktif dan membocorkan informasi internal runtime PHP.",
+			severity:    models.SeverityHigh,
+			category:    "Information Disclosure",
+			matchSign:   "PHP Credits",
+			remediation: "Nonaktifkan direktif expose_php pada konfigurasi php.ini (expose_php = Off).",
 		},
 		{
 			path:        "/actuator/health",
@@ -847,11 +982,17 @@ func (m *SensitiveFilesModule) Run(ctx context.Context, target *models.Target, p
 		}
 
 		if resp.StatusCode == http.StatusOK {
+			// Cegah false positive bila request dialihkan ke halaman lain seperti homepage
+			if resp.Request != nil && resp.Request.URL.Path != probe.path && !strings.HasSuffix(resp.Request.URL.Path, probe.path) {
+				resp.Body.Close()
+				continue
+			}
+
 			bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 16384))
 			resp.Body.Close()
 
 			bodyStr := string(bodyBytes)
-			if probe.matchSign == "" || strings.Contains(bodyStr, probe.matchSign) {
+			if probe.matchSign != "" && strings.Contains(bodyStr, probe.matchSign) {
 				findings = append(findings, models.Finding{
 					ModuleName:         m.Name(),
 					Title:              probe.title,
@@ -1027,7 +1168,7 @@ func (m *VulnTemplatesModule) Run(ctx context.Context, target *models.Target, pr
 		return findings, nil
 	}
 
-	client := val.CreateSafeHTTPClient(6*time.Second, false, 2)
+	client := val.CreateSafeHTTPClient(8*time.Second, true, 4)
 	baseURL := strings.TrimRight(target.CanonicalURL, "/")
 
 	_ = filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error {

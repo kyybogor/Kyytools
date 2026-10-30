@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/kyybogor/Kyytools/internal/models"
@@ -70,10 +71,10 @@ func TestWebHeadersModule_LocalServer(t *testing.T) {
 	foundCookieInsecure := false
 
 	for _, f := range findings {
-		if f.Title == "Pengungkapan Versi Web Server (Server Banner)" {
+		if strings.Contains(f.Title, "Pengungkapan Versi Web Server") || strings.Contains(f.Title, "Server Banner") {
 			foundServerBanner = true
 		}
-		if f.Title == "Pengungkapan Framework Backend (X-Powered-By)" {
+		if (strings.Contains(f.Title, "Pengungkapan Versi PHP") || strings.Contains(f.Title, "X-Powered-By")) && f.Severity == models.SeverityCritical {
 			foundPoweredBy = true
 		}
 		if f.Category == "Cookie Security" {
@@ -85,7 +86,7 @@ func TestWebHeadersModule_LocalServer(t *testing.T) {
 		t.Errorf("Server banner version disclosure tidak terdeteksi")
 	}
 	if !foundPoweredBy {
-		t.Errorf("X-Powered-By disclosure tidak terdeteksi")
+		t.Errorf("X-Powered-By PHP version disclosure (Critical) tidak terdeteksi")
 	}
 	if !foundCookieInsecure {
 		t.Errorf("Cookie insecure flag tidak terdeteksi")
