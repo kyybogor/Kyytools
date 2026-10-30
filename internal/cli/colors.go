@@ -52,14 +52,23 @@ func SeverityBadge(s models.Severity) string {
 	}
 }
 
-// PrintBanner outputs the standardized KyyTools banner.
+// PrintBanner outputs the standardized KyyTools banner with a large ASCII art text logo.
 func PrintBanner() {
-	banner := `
-==================================================
-       KyyTools Security Scanner
-       Go-Based Security Assessment Tool
-==================================================`
-	fmt.Println(Bold(Cyan(banner)))
+	logo := `
+ ██╗  ██╗██╗   ██╗██╗   ██╗████████╗ ██████╗  ██████╗ ██╗     ███████╗
+ ██║ ██╔╝╚██╗ ██╔╝╚██╗ ██╔╝╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝
+ █████╔╝  ╚████╔╝  ╚████╔╝    ██║   ██║   ██║██║   ██║██║     ███████╗
+ ██╔═██╗   ╚██╔╝    ╚██╔╝     ██║   ██║   ██║██║   ██║██║     ╚════██║
+ ██║  ██╗   ██║      ██║      ██║   ╚██████╔╝╚██████╔╝███████╗███████║
+ ╚═╝  ╚═╝   ╚═╝      ╚═╝      ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+
+	sub := `========================================================================
+       🛡️  KyyTools Security Scanner - Go-Based Assessment Tool
+       Version 1.0.0 | High-Performance Vulnerability Auditor
+========================================================================`
+
+	fmt.Println(Bold(Cyan(logo)))
+	fmt.Println(Cyan(sub))
 }
 
 // RenderTable prints a simple bordered ASCII table.
