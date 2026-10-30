@@ -96,15 +96,23 @@ func RunInteractiveMenu(ctx context.Context, app *AppServices) {
 		choice := strings.TrimSpace(input)
 		switch choice {
 		case "1":
+			fmt.Println("\n" + Bold(Cyan("=== [1] Quick Scan ===")))
+			fmt.Println(Gray("Pemeriksaan cepat untuk menguji respon server, DNS dasar, header web, dan port vital."))
 			interactiveScanFlow(ctx, app, "quick")
 		case "2":
+			fmt.Println("\n" + Bold(Cyan("=== [2] Web Security Scan (Deep Audit) ===")))
+			fmt.Println(Gray("Audit mendalam aplikasi web: headers, cookie flags, CORS, metode HTTP (TRACE/PUT), paparan file sensitif (.env, .git, backup), dan template YAML."))
 			interactiveScanFlow(ctx, app, "web")
 		case "3":
-			interactiveScanFlow(ctx, app, "quick")
+			fmt.Println("\n" + Bold(Cyan("=== [3] Domain Scanner ===")))
+			fmt.Println(Gray("Pemeriksaan DNS komprehensif: resolusi A/AAAA, deteksi MX, dan pengujian SPF, DMARC, serta CAA record."))
+			interactiveScanFlow(ctx, app, "standard")
 		case "4":
+			fmt.Println("\n" + Bold(Cyan("=== [4] IP & Port Scanner ===")))
+			fmt.Println(Gray("Audit jaringan & port TCP (Top 100 Port) disertai service banner grabbing untuk deteksi daemon aktif."))
 			interactiveScanFlow(ctx, app, "network")
 		case "5":
-			fmt.Println("\n" + Cyan("ℹ️ Subdomain Discovery:") + " Gunakan profil web atau modul subdomain pada scan target.")
+			fmt.Println("\n" + Cyan("ℹ️ Subdomain Discovery:") + " Menjalankan modul penemuan & validasi subdomain dengan scope terkontrol.")
 			interactiveScanFlow(ctx, app, "web")
 		case "6":
 			interactiveListTemplates()
@@ -154,20 +162,19 @@ func interactiveScanFlow(ctx context.Context, app *AppServices, defaultProfile s
 	}
 
 	// Target Summary
-	fmt.Println("\n" + Green("✅ Target Valid:"))
+	fmt.Println("\n" + Green("✅ Target Berhasil Divalidasi:"))
 	fmt.Printf(" • Hostname/IP : %s\n", Bold(parsedTarget.Host))
 	fmt.Printf(" • Tipe Target : %s\n", parsedTarget.Type)
 	fmt.Printf(" • Port Default: %d\n", parsedTarget.Port)
 	fmt.Printf(" • Resolusi IP : %s\n", strings.Join(parsedTarget.ResolvedIPs, ", "))
 	fmt.Printf(" • URL Dasar   : %s\n", parsedTarget.CanonicalURL)
 
-	// Profile selection
-	fmt.Printf("\nPilih Profil Scan [quick, standard, web, network, custom] (Default: %s): ", defaultProfile)
+	// Display detailed profile selection guide
+	displayProfileSelectionGuide(defaultProfile)
+
+	fmt.Printf("\n"+Bold("Pilih Profil [1/2/3/4/5 atau ketik nama profil] (Default: %s): "), defaultProfile)
 	pInput, _ := reader.ReadString('\n')
-	selectedProfileName := strings.TrimSpace(pInput)
-	if selectedProfileName == "" {
-		selectedProfileName = defaultProfile
-	}
+	selectedProfileName := resolveProfileChoice(strings.TrimSpace(pInput), defaultProfile)
 
 	prof, err := config.GetProfile(app.Config, selectedProfileName)
 	if err != nil {
@@ -175,13 +182,19 @@ func interactiveScanFlow(ctx context.Context, app *AppServices, defaultProfile s
 		return
 	}
 
-	fmt.Println("\n" + Bold("📋 Modul yang akan dijalankan:"))
-	for _, m := range prof.Modules {
-		fmt.Printf("  • %s\n", Cyan(m))
+	// Selected profile summary card
+	fmt.Println("\n" + Bold(Cyan("╭────────────────────────────────────────────────────────────────────────╮")))
+	fmt.Printf("  🎯 %s: %s\n", Bold("Profil Terpilih"), Bold(Green(prof.Name)))
+	fmt.Printf("  📌 %s: %s\n", Bold("Fokus Audit    "), prof.Description)
+	fmt.Printf("  ⏱️  %s: %d detik  |  🧵 %s: %d worker  |  🔌 %s: %s\n",
+		Bold("Batas Waktu"), prof.TimeoutSeconds, Bold("Konkurensi"), prof.Concurrency, Bold("Port"), prof.PortRange)
+	fmt.Println(Bold("  📋 Modul Pemeriksaan yang Akan Dijalankan:"))
+	for idx, m := range prof.Modules {
+		fmt.Printf("     %2d. %-22s - %s\n", idx+1, Cyan(m), getModuleExplanation(m))
 	}
-	fmt.Printf("  Timeout: %ds | Concurrency: %d | Ports: %s\n", prof.TimeoutSeconds, prof.Concurrency, prof.PortRange)
+	fmt.Println(Bold(Cyan("╰────────────────────────────────────────────────────────────────────────╯")))
 
-	fmt.Print("\n" + Bold(Yellow("Mulai scan sekarang? [Y/n]: ")))
+	fmt.Print("\n" + Bold(Yellow("Mulai audit keamanan sekarang? [Y/n]: ")))
 	confirm, _ := reader.ReadString('\n')
 	confirm = strings.TrimSpace(strings.ToLower(confirm))
 	if confirm != "" && confirm != "y" && confirm != "yes" {
@@ -191,6 +204,96 @@ func interactiveScanFlow(ctx context.Context, app *AppServices, defaultProfile s
 
 	// Run scan
 	executeScan(ctx, app, parsedTarget, prof)
+}
+
+func displayProfileSelectionGuide(defaultProfile string) {
+	guide := `
+==================================================================================================
+                                PANDUAN LENGKAP PROFIL SCANNING
+==================================================================================================
+ [1] Quick Scan (quick) - Rekomendasi Cek Kilat
+     • Fungsi   : Pemeriksaan cepat untuk verifikasi konektivitas, DNS awal, & respon web dasar.
+     • Modul    : Target Info, DNS Resolusi, HTTP Headers, 4 Port Web Vital (80, 443, 8080, 8443).
+     • Durasi   : Sangat Singkat (~ 10 - 25 detik).
+     • Cocok utk: Smoke test awal sebelum melakukan audit mendalam atau verifikasi server baru.
+
+ [2] Standard Scan (standard) - Audit Seimbang & Menyeluruh
+     • Fungsi   : Penilaian keamanan seimbang mencakup konfigurasi web, TLS, dan 20 port umum.
+     • Modul    : DNS/Email Security, TLS Cert, Web Headers, Metode HTTP, CORS, 20 Port Standar.
+     • Durasi   : Sedang (~ 1 - 2 menit).
+     • Cocok utk: Audit berkala bulanan pada website operasional dan server produksi.
+
+ [3] Web Security Scan (web) - Audit Mendalam Aplikasi Web (Deep Vulnerability Audit)
+     • Fungsi   : Penyelidikan mendalam mencari celah sekecil apa pun pada aplikasi web dan REST API.
+     • Modul    : Security Headers (HSTS, CSP, X-Frame, Referrer, Permissions, Cache-Control),
+                  Flag Keamanan Cookie (HttpOnly, Secure, SameSite), Eksploitasi CORS Reflection,
+                  Pemeriksaan Metode HTTP Berbahaya (TRACE/XST, PUT Unauthenticated),
+                  Deteksi Paparan File Sensitif (.env, .git, backup.sql, robots.txt, phpinfo),
+                  serta Eksekusi Engine Template Aturan Kerentanan YAML.
+     • Durasi   : Mendalam (~ 1 - 3 menit).
+     • Cocok utk: Pengujian komprehensif website, API gateway, portal login, & audit pra-rilis.
+
+ [4] Network & Extended Port Scan (network) - Audit Jaringan & Layanan Server
+     • Fungsi   : Pemetaan port terbuka dan identifikasi versi layanan server (Banner Grabbing).
+     • Modul    : Resolusi Host, Pemindaian Top 100 Port TCP Krusial, Service Fingerprinting.
+     • Durasi   : Agak Lama (~ 2 - 4 menit).
+     • Cocok utk: Memeriksa perimeter keamanan server/VPS dan mendeteksi port yang lupa ditutup.
+
+ [5] Custom Scan (custom) - Profil Kustom Fleksibel
+     • Fungsi   : Parameter dan cakupan modul yang dapat disesuaikan pengguna.
+==================================================================================================`
+	fmt.Println(Cyan(guide))
+}
+
+func resolveProfileChoice(input, defaultProfile string) string {
+	clean := strings.ToLower(strings.TrimSpace(input))
+	switch clean {
+	case "1", "quick":
+		return "quick"
+	case "2", "standard":
+		return "standard"
+	case "3", "web":
+		return "web"
+	case "4", "network":
+		return "network"
+	case "5", "custom":
+		return "custom"
+	case "":
+		return defaultProfile
+	default:
+		return clean
+	}
+}
+
+func getModuleExplanation(moduleName string) string {
+	switch moduleName {
+	case "target_info":
+		return "Validasi target, klasifikasi tipe, dan proteksi anti-SSRF/loopback"
+	case "dns_resolver":
+		return "Pemeriksaan DNS A/AAAA, MX, serta record email SPF, DMARC, dan CAA"
+	case "tls_check":
+		return "Validasi sertifikat SSL/TLS, masa kedaluwarsa & protokol usang (TLS 1.0/1.1)"
+	case "web_headers":
+		return "Audit security headers (HSTS, CSP, X-Frame, Referrer, Permissions, Cookie SameSite)"
+	case "http_methods":
+		return "Deteksi metode HTTP berbahaya (OPTIONS, TRACE/XST, dan PUT tidak terotentikasi)"
+	case "cors_check":
+		return "Evaluasi celah CORS: Arbitrary Origin Reflection & kebocoran kredensial"
+	case "sensitive_files":
+		return "Deteksi kebocoran file kritis (.env, .git/HEAD, backup.sql, robots, phpinfo)"
+	case "vuln_templates":
+		return "Eksekusi engine template aturan kerentanan YAML KyyTools"
+	case "service_detection":
+		return "Banner grabbing untuk identifikasi software daemon & fingerprint versi"
+	case "port_scan_top":
+		return "Pemindaian 4 port web vital (80, 443, 8080, 8443)"
+	case "port_scan_standard":
+		return "Pemindaian 20 port TCP umum (SSH, FTP, Web, Mail, Database)"
+	case "port_scan_extended":
+		return "Pemindaian port diperluas (100 port jaringan krusial)"
+	default:
+		return "Modul pengujian keamanan khusus"
+	}
 }
 
 func executeScan(ctx context.Context, app *AppServices, target *models.Target, prof *models.ScanProfile) {

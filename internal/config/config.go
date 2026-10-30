@@ -20,7 +20,7 @@ func DefaultProfiles() []models.ScanProfile {
 	return []models.ScanProfile{
 		{
 			Name:           "quick",
-			Description:    "Pemeriksaan cepat: validasi target, DNS basic, status web, dan port vital",
+			Description:    "Pemeriksaan kilat: validasi respon target, DNS dasar, header web utama, dan 4 port krusial",
 			Modules:        []string{"target_info", "dns_resolver", "web_headers", "port_scan_top"},
 			TimeoutSeconds: 60,
 			Concurrency:    10,
@@ -30,8 +30,8 @@ func DefaultProfiles() []models.ScanProfile {
 		},
 		{
 			Name:           "standard",
-			Description:    "Pemeriksaan seimbang: DNS komprehensif, HTTP/TLS, security headers, dan 20 port umum",
-			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers", "http_methods", "cookie_flags", "port_scan_standard"},
+			Description:    "Pemeriksaan seimbang: DNS, SSL/TLS, Security Headers, metode HTTP, CORS, dan 20 port umum",
+			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers", "http_methods", "cors_check", "port_scan_standard"},
 			TimeoutSeconds: 180,
 			Concurrency:    25,
 			RateLimit:      30,
@@ -40,9 +40,9 @@ func DefaultProfiles() []models.ScanProfile {
 		},
 		{
 			Name:           "web",
-			Description:    "Fokus keamanan web: HTTP status, TLS handshake, SSL certificate, headers, cookies, methods, template checks",
-			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers", "http_methods", "cookie_flags", "vuln_templates"},
-			TimeoutSeconds: 240,
+			Description:    "Audit mendalam aplikasi web: headers, cookie flags, CORS exploitability, metode HTTP (TRACE/PUT), paparan file sensitif (.env, .git, backup), dan engine template YAML",
+			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers", "http_methods", "cors_check", "sensitive_files", "vuln_templates"},
+			TimeoutSeconds: 300,
 			Concurrency:    15,
 			RateLimit:      25,
 			PortRange:      "80,443,8000,8080,8443",
@@ -50,7 +50,7 @@ func DefaultProfiles() []models.ScanProfile {
 		},
 		{
 			Name:           "network",
-			Description:    "Pemeriksaan jaringan: resolusi IP, port scan diperluas (100 port), service banner grabbing",
+			Description:    "Pemeriksaan jaringan: resolusi host, port scan diperluas (100 port penting), dan service banner grabbing",
 			Modules:        []string{"target_info", "dns_resolver", "port_scan_extended", "service_detection"},
 			TimeoutSeconds: 300,
 			Concurrency:    50,
@@ -60,8 +60,8 @@ func DefaultProfiles() []models.ScanProfile {
 		},
 		{
 			Name:           "custom",
-			Description:    "Profil kustom yang dapat disesuaikan pengguna",
-			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers"},
+			Description:    "Profil kustom fleksibel yang dapat disesuaikan pengguna",
+			Modules:        []string{"target_info", "dns_resolver", "tls_check", "web_headers", "sensitive_files"},
 			TimeoutSeconds: 120,
 			Concurrency:    20,
 			RateLimit:      25,

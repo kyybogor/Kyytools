@@ -38,7 +38,7 @@ reports:
 
 profiles:
   - name: "quick"
-    description: "Pemeriksaan cepat: validasi target, DNS basic, status web, dan port vital"
+    description: "Pemeriksaan kilat: validasi respon target, DNS dasar, header web utama, dan 4 port krusial"
     modules:
       - "target_info"
       - "dns_resolver"
@@ -51,14 +51,14 @@ profiles:
     is_default: true
 
   - name: "standard"
-    description: "Pemeriksaan seimbang: DNS komprehensif, HTTP/TLS, security headers, dan 20 port umum"
+    description: "Pemeriksaan seimbang: DNS, SSL/TLS, Security Headers, metode HTTP, CORS, dan 20 port umum"
     modules:
       - "target_info"
       - "dns_resolver"
       - "tls_check"
       - "web_headers"
       - "http_methods"
-      - "cookie_flags"
+      - "cors_check"
       - "port_scan_standard"
     timeout_seconds: 180
     concurrency: 25
@@ -67,23 +67,24 @@ profiles:
     is_default: false
 
   - name: "web"
-    description: "Fokus keamanan web: HTTP status, TLS handshake, SSL certificate, headers, cookies, methods, template checks"
+    description: "Audit mendalam aplikasi web: headers, cookie flags, CORS exploitability, metode HTTP (TRACE/PUT), paparan file sensitif (.env, .git, backup), dan engine template YAML"
     modules:
       - "target_info"
       - "dns_resolver"
       - "tls_check"
       - "web_headers"
       - "http_methods"
-      - "cookie_flags"
+      - "cors_check"
+      - "sensitive_files"
       - "vuln_templates"
-    timeout_seconds: 240
+    timeout_seconds: 300
     concurrency: 15
     rate_limit: 25
     port_range: "80,443,8000,8080,8443"
     is_default: false
 
   - name: "network"
-    description: "Pemeriksaan jaringan: resolusi IP, port scan diperluas (100 port), service banner grabbing"
+    description: "Pemeriksaan jaringan: resolusi host, port scan diperluas (100 port penting), dan service banner grabbing"
     modules:
       - "target_info"
       - "dns_resolver"
@@ -96,12 +97,13 @@ profiles:
     is_default: false
 
   - name: "custom"
-    description: "Profil kustom yang dapat disesuaikan pengguna"
+    description: "Profil kustom fleksibel yang dapat disesuaikan pengguna"
     modules:
       - "target_info"
       - "dns_resolver"
       - "tls_check"
       - "web_headers"
+      - "sensitive_files"
     timeout_seconds: 120
     concurrency: 20
     rate_limit: 25
